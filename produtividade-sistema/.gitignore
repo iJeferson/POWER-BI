@@ -1,0 +1,77 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ── Ambientes virtuais ──
+.venv/
+venv/
+env/
+ENV/
+backend/.venv/
+
+# ── Variáveis de ambiente (nunca commitar) ──
+.env
+.env.*
+!.env.example
+
+# ── Banco de dados local (SQLite) ──
+*.db
+*.db-wal
+*.db-shm
+produtividade.db*
+
+# ── Uploads / dados sensíveis ──
+data/uploads/*
+!data/uploads/.gitkeep
+
+# ── Docker / Railway (artefatos locais) ──
+pgdata/
+
+# ── IDE e editores ──
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+*.sublime-project
+*.sublime-workspace
+
+# ── Sistema operacional ──
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Logs ──
+*.log
+logs/
+
+# ── Cursor / ferramentas locais ──
+.cursor/
+
+# ── Legado Power BI (se existir na pasta pai) ──
+pbit-extracted/

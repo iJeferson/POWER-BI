@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0c2340" />
+<link rel="icon" href="/static/assets/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png" />
+<link rel="manifest" href="/static/manifest.webmanifest" />
+<title>Consórcio Bahia Digital — Painel de Captura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/static/css/app.css?v=17" />
+<style>
+@keyframes loader-spin-slow { to { transform: rotate(360deg); } }
+#loading .loader-lucide {
+width: 44px;
+height: 44px;
+border: 3px solid rgba(255, 255, 255, 0.22);
+border-top-color: #fff;
+border-radius: 50%;
+animation: loader-spin-slow 3s linear infinite !important;
+flex-shrink: 0;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+<div class="ambient-bg" aria-hidden="true"></div>
+<header class="topbar">
+<div class="topbar-accent" aria-hidden="true"></div>
+<div class="topbar-inner">
+<div class="brand">
+<div class="brand-logo-wrap">
+<img class="brand-logo" src="/static/assets/logo-consorcio.png" alt="Consórcio Bahia Digital" />
+</div>
+<div class="brand-text">
+<span class="brand-eyebrow" id="brandEyebrow">Inteligência de Dados</span>
+<h1 id="pageTitle">Painel de Captura</h1>
+<p id="pageSubtitle">Capturas por emissora, posto e tipo de documento.</p>
+</div>
+</div>
+<div class="header-actions">
+<label class="btn btn-ghost file-input-wrap">
+<i data-lucide="file-spreadsheet" class="icon icon-sm" aria-hidden="true"></i>
+Selecionar planilha
+<input type="file" id="arquivoExcel" accept=".xlsx,.xls" />
+</label>
+<button type="button" class="btn btn-primary" id="btnImportar">
+<i data-lucide="upload" class="icon icon-sm" aria-hidden="true"></i>
+Importar dados
+</button>
+</div>
+</div>
+</header>
+<div class="app-body">
+<div class="control-bar">
+<button type="button" class="btn-filter-toggle" id="btnOpenFilters" aria-expanded="false" aria-controls="filterPanel">
+<i data-lucide="sliders-horizontal" class="icon icon-sm" aria-hidden="true"></i>
+Filtros
+<span class="filter-count" id="filterCount" hidden>0</span>
+</button>
+<nav class="tabs-segmented" role="tablist">
+<button class="tab active" data-tab="captura" role="tab"><i data-lucide="layout-dashboard" class="icon icon-sm" aria-hidden="true"></i> Painel de Captura</button>
+<button class="tab" data-tab="produtividade" role="tab"><i data-lucide="users" class="icon icon-sm" aria-hidden="true"></i> Produtividade Operacional</button>
+</nav>
+<div class="active-chips" id="activeChips" aria-live="polite"></div>
+</div>
+<div class="filter-backdrop" id="filterBackdrop" hidden></div>
+<aside class="filter-panel" id="filterPanel" aria-label="Painel de filtros">
+<div class="filter-panel-head">
+<h2 class="filter-drawer-title">Filtros</h2>
+<button type="button" class="btn-icon" id="btnCloseFilters" aria-label="Fechar filtros">
+<i data-lucide="x" class="icon" aria-hidden="true"></i>
+</button>
+</div>
+<div class="filter-panel-collapse" id="filterCollapse">
+<div class="filter-panel-body">
+<section class="filter-group">
+<h3><span class="filter-icon" aria-hidden="true"><i data-lucide="calendar-range"></i></span> Período</h3>
+<div class="filter-row-2">
+<div class="field"><label for="dataInicio">Início</label><input type="date" id="dataInicio" /></div>
+<div class="field"><label for="dataFim">Fim</label><input type="date" id="dataFim" /></div>
+</div>
+<div class="field">
+<label>Mês</label>
+<div class="chip-grid" id="filtroMes"></div>
+</div>
+</section>
+<section class="filter-group">
+<h3><span class="filter-icon" aria-hidden="true"><i data-lucide="map-pinned"></i></span> Localização</h3>
+<div class="field">
+<label>Região</label>
+<div class="chip-grid" id="filtroRegiao"></div>
+</div>
+<div class="field">
+<label>Emissora</label>
+<div class="chip-grid" id="filtroEmissora"></div>
+</div>
+<div class="filter-row-2">
+<div class="field">
+<label for="postoInput">Posto</label>
+<div class="autocomplete">
+<span class="ac-search" aria-hidden="true"><i data-lucide="search"></i></span>
+<input type="text" id="postoInput" placeholder="Digite para buscar posto..." autocomplete="off" spellcheck="false" />
+<input type="hidden" id="posto" value="" />
+<ul class="autocomplete-list" id="postoList" role="listbox" hidden></ul>
+</div>
+</div>
+<div class="field">
+<label for="operadorInput">Operador</label>
+<div class="autocomplete">
+<span class="ac-search" aria-hidden="true"><i data-lucide="search"></i></span>
+<input type="text" id="operadorInput" placeholder="Digite para buscar operador..." autocomplete="off" spellcheck="false" />
+<input type="hidden" id="operador" value="" />
+<ul class="autocomplete-list" id="operadorList" role="listbox" hidden></ul>
+</div>
+</div>
+</div>
+</section>
+<section class="filter-group">
+<h3><span class="filter-icon" aria-hidden="true"><i data-lucide="layers"></i></span> Serviço</h3>
+<div class="field">
+<label>Tipo de posto</label>
+<div class="chip-grid" id="filtroTipoPosto"></div>
+</div>
+<div class="field">
+<label>Tipo de captura</label>
+<div class="chip-grid" id="filtroTipo"></div>
+</div>
+</section>
+</div>
+<div class="filter-panel-foot">
+<button type="button" class="btn btn-ghost btn-recolher" id="btnRecolherFiltros"><i data-lucide="chevron-up" class="icon icon-sm" aria-hidden="true"></i> Recolher</button>
+<button type="button" class="btn btn-ghost" id="btnLimpar"><i data-lucide="rotate-ccw" class="icon icon-sm" aria-hidden="true"></i> Limpar</button>
+<button type="button" class="btn btn-primary" id="btnFiltrar"><i data-lucide="check" class="icon icon-sm" aria-hidden="true"></i> Aplicar filtros</button>
+</div>
+</div>
+</aside>
+<main class="main">
+<div class="resumo-strip" id="resumoStrip"></div>
+<section id="tab-captura" class="tab-panel active">
+<div class="kpi-row" id="kpiCaptura"></div>
+<div class="kpi-row kpi-row-insights" id="kpiInsights"></div>
+<div class="charts-grid">
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="building-2"></i></span><div><h3>Captura por Emissora</h3><p>Volume absoluto por emissora</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartEmissora"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="pie-chart"></i></span><div><h3>Participação por Emissora</h3><p>Distribuição percentual (%)</p></div></div></header><div class="chart-wrap"><canvas id="chartEmissoraDonut"></canvas></div></article>
+<article class="chart-card chart-wide"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="bar-chart-2"></i></span><div><h3>Evolução por mês</h3><p>Capturas ao longo dos meses</p></div></div></header><div class="chart-wrap"><canvas id="chartEvolucaoMes"></canvas></div></article>
+<article class="chart-card chart-wide"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="clock-3"></i></span><div><h3>Horário de pico</h3><p>Volume por hora de início do atendimento</p></div></div></header><div class="chart-wrap"><canvas id="chartHora"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="calendar-days"></i></span><div><h3>Por dia da semana</h3><p>Distribuição semanal de atendimentos</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartDiaSemana"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="layers"></i></span><div><h3>Por tipo de posto</h3><p>SAC · CIRETRAN · Prefeitura…</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartTipoPosto"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="id-card"></i></span><div><h3>Por tipo de documento</h3><p>CIN · CNH · RENAVAM</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartTipoDoc"></canvas></div></article>
+</div>
+</section>
+<section id="tab-produtividade" class="tab-panel">
+<div class="kpi-row" id="kpiProd"></div>
+<div class="charts-grid">
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="map-pin"></i></span><div><h3>Atendimento por posto</h3><p>Ranking de produtividade</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartPosto"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="user-check"></i></span><div><h3>Atendimento por colaborador</h3><p>Performance individual</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartColab"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="chart-pie"></i></span><div><h3>Participação por região</h3><p>Composição regional</p></div></div></header><div class="chart-wrap"><canvas id="chartRegiaoDonut"></canvas></div></article>
+<article class="chart-card"><header class="chart-header"><div class="chart-header-inner"><span class="chart-icon"><i data-lucide="globe"></i></span><div><h3>Captura por região</h3><p>Volume por território</p></div></div></header><div class="chart-wrap chart-tall"><canvas id="chartRegiao"></canvas></div></article>
+</div>
+</section>
+<footer class="page-footer">
+<span id="status"></span>
+<span>Consórcio Bahia Digital</span>
+</footer>
+</main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<div class="loading-overlay" id="loading" aria-live="polite" aria-busy="true">
+<div class="loader-lucide" aria-hidden="true"></div>
+<p class="loading-title" id="loadingText">Carregando dados</p>
+<p class="loading-sub" id="loadingSub">Atualizando indicadores e visualizações</p>
+<div class="loading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+<div class="loading-progress-bar" id="loadingBar"></div>
+</div>
+</div>
+<script src="/static/js/app.js?v=17"></script>
+</body>
+</html>

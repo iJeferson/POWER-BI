@@ -1,0 +1,22 @@
+{
+  "name": "Consórcio Bahia Digital — Painel de Captura",
+  "short_name": "Bahia Digital",
+  "description": "Painel de produtividade CIN, CNH e RENAVAM",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef2f8",
+  "theme_color": "#0c2340",
+  "icons": [
+    {
+      "src": "/static/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
