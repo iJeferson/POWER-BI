@@ -18,15 +18,18 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    if settings.is_production and settings.is_sqlite:
+    misconfigured = settings.is_production and settings.is_sqlite
+    if misconfigured:
         logger.error(
             "DATABASE_URL não configurado. Vincule o PostgreSQL e defina "
-            "DATABASE_URL=${{Postgres.DATABASE_URL}}."
+            "DATABASE_URL=${{Postgres.DATABASE_URL}}. Usando SQLite temporário."
         )
-    else:
+
+    if not settings.is_sqlite:
         wait_for_database()
-        init_db_core()
-        threading.Thread(target=migrate_dedup, daemon=True, name="migrate-dedup").start()
+
+    init_db_core()
+    threading.Thread(target=migrate_dedup, daemon=True, name="migrate-dedup").start()
     yield
 
 
