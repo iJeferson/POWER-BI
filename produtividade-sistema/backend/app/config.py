@@ -42,13 +42,5 @@ class Settings(BaseSettings):
     def database_kind(self) -> str:
         return "sqlite" if self.is_sqlite else "postgresql"
 
-    def ensure_persistent_database(self) -> None:
-        if self.is_production and self.is_sqlite:
-            raise RuntimeError(
-                "Produção no Railway exige DATABASE_URL do PostgreSQL. "
-                "SQLite não persiste dados entre deploys. "
-                "Vincule o plugin PostgreSQL e defina DATABASE_URL=${{Postgres.DATABASE_URL}}."
-            )
-
 
 settings = Settings()

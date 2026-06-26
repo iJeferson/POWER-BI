@@ -1,3 +1,5 @@
+import logging
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -6,15 +8,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.bootstrap import init_db
+from app.bootstrap import init_db_core, migrate_dedup, wait_for_database
 from app.config import settings
 from app.routers import dashboard, importacao
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    settings.ensure_persistent_database()
-    init_db()
+    if settings.is_production and settings.is_sqlite:
+        logger.error(
+            "DATABASE_URL não configurado. Vincule o PostgreSQL e defina "
+            "DATABASE_URL=${{Postgres.DATABASE_URL}}."
+        )
+    else:
+        wait_for_database()
+        init_db_core()
+        threading.Thread(target=migrate_dedup, daemon=True, name="migrate-dedup").start()
     yield
 
 
@@ -43,11 +55,17 @@ if static_dir.exists():
 
 @app.get("/api/health")
 def health():
+    misconfigured = settings.is_production and settings.is_sqlite
     return {
-        "status": "ok",
+        "status": "ok" if not misconfigured else "misconfigured",
         "service": "produtividade-api",
         "database": settings.database_kind,
         "persistent": not settings.is_sqlite,
+        "message": (
+            "Configure DATABASE_URL=${{Postgres.DATABASE_URL}} no Railway."
+            if misconfigured
+            else None
+        ),
     }
 
 

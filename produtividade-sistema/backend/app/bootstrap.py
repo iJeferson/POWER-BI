@@ -1,8 +1,13 @@
 """Inicializa tabelas, migrações leves e view de produtividade."""
+import logging
+import time
+
 from sqlalchemy import inspect, text
 
 from app.database import Base, SessionLocal, engine
 from app.models import TipoCaptura
+
+logger = logging.getLogger(__name__)
 
 VIEW_SQL = """
 CREATE VIEW IF NOT EXISTS vw_produtividade AS
@@ -128,10 +133,23 @@ def migrate():
                     pass
 
 
-def init_db():
+def wait_for_database(max_attempts: int = 30, delay: float = 2.0) -> None:
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("Conexão com banco estabelecida.")
+            return
+        except Exception as exc:
+            logger.warning("Aguardando banco (%s/%s): %s", attempt, max_attempts, exc)
+            if attempt == max_attempts:
+                raise
+            time.sleep(delay)
+
+
+def init_db_core() -> None:
     Base.metadata.create_all(bind=engine)
     migrate()
-    migrate_dedup()
 
     db = SessionLocal()
     try:
@@ -149,6 +167,13 @@ def init_db():
     with engine.begin() as conn:
         conn.execute(text("DROP VIEW IF EXISTS vw_produtividade"))
         conn.execute(text(VIEW_SQL))
+
+
+def init_db():
+    if not engine.url.drivername.startswith("sqlite"):
+        wait_for_database()
+    init_db_core()
+    migrate_dedup()
 
 
 if __name__ == "__main__":
