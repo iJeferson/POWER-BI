@@ -13,6 +13,7 @@ from app.routers import dashboard, importacao
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    settings.ensure_persistent_database()
     init_db()
     yield
 
@@ -42,7 +43,12 @@ if static_dir.exists():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "produtividade-api"}
+    return {
+        "status": "ok",
+        "service": "produtividade-api",
+        "database": settings.database_kind,
+        "persistent": not settings.is_sqlite,
+    }
 
 
 @app.get("/favicon.ico", include_in_schema=False)

@@ -1,4 +1,4 @@
-﻿# Sistema Produtividade Consórcio
+# Sistema Produtividade Consórcio
 
 Dashboard web de produtividade (CIN, CNH, RENAVAM) com **FastAPI**, **PostgreSQL** em produção e importação de planilhas Excel.
 
@@ -39,6 +39,12 @@ No serviço da aplicação, configure:
 | `CORS_ORIGINS` | URL pública do app (ex.: `https://seu-app.up.railway.app`) |
 
 `PORT` é definido automaticamente pelo Railway.
+
+**Importante — persistência dos dados:** os dados importados ficam no **PostgreSQL**, não no container da aplicação. Cada novo deploy **não apaga** o banco, desde que `DATABASE_URL` aponte para o PostgreSQL do Railway. Se `DATABASE_URL` não estiver configurado, o app usa SQLite temporário e **perde tudo** a cada deploy.
+
+Confira em `/api/health`:
+- `"database": "postgresql"` e `"persistent": true` → dados mantidos entre deploys
+- `"database": "sqlite"` → configure o PostgreSQL imediatamente
 
 ### 3. Build e deploy
 

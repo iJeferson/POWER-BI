@@ -783,6 +783,36 @@ document.getElementById('btnLimpar').addEventListener('click', limparFiltros);
   document.getElementById(id).addEventListener('change', updateActiveChips);
 });
 
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function atualizarArquivoSelecionado() {
+  const input = document.getElementById('arquivoExcel');
+  const info = document.getElementById('arquivoSelecionadoInfo');
+  const btn = document.getElementById('btnImportar');
+  const label = document.getElementById('btnSelecionarArquivo');
+  const labelText = document.getElementById('btnSelecionarTexto');
+  if (input.files.length) {
+    const file = input.files[0];
+    info.textContent = `Planilha selecionada: ${file.name} (${formatFileSize(file.size)})`;
+    info.classList.add('has-file');
+    label.classList.add('has-file');
+    if (labelText) labelText.textContent = 'Trocar planilha';
+    btn.disabled = false;
+  } else {
+    info.textContent = 'Nenhuma planilha selecionada';
+    info.classList.remove('has-file');
+    label.classList.remove('has-file');
+    if (labelText) labelText.textContent = 'Selecionar planilha';
+    btn.disabled = true;
+  }
+}
+
+document.getElementById('arquivoExcel').addEventListener('change', atualizarArquivoSelecionado);
+
 document.getElementById('btnImportar').addEventListener('click', async () => {
   const input = document.getElementById('arquivoExcel');
   if (!input.files.length) { toast('Selecione uma planilha Excel para importar'); return; }
@@ -796,6 +826,7 @@ document.getElementById('btnImportar').addEventListener('click', async () => {
     toast(data.mensagem);
     await carregarDashboard();
     input.value = '';
+    atualizarArquivoSelecionado();
   } catch (e) {
     toast('Erro: ' + e.message);
   } finally {

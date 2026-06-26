@@ -259,6 +259,33 @@ gap: 0.6rem;
 flex-wrap: wrap;
 align-items: center;
 }
+.import-group {
+display: flex;
+flex-wrap: wrap;
+align-items: center;
+gap: 0.5rem 0.6rem;
+}
+.file-selected-hint {
+flex: 1 1 100%;
+margin: 0;
+font-size: 0.75rem;
+color: var(--text-muted);
+line-height: 1.35;
+}
+.file-selected-hint.has-file {
+color: var(--accent);
+font-weight: 600;
+}
+.file-input-wrap.has-file {
+border-color: rgba(59, 111, 212, 0.45);
+background: rgba(59, 111, 212, 0.08);
+}
+.btn-primary:disabled {
+opacity: 0.45;
+cursor: not-allowed;
+transform: none;
+box-shadow: none;
+}
 /* ── Buttons ── */
 .btn {
 display: inline-flex;
