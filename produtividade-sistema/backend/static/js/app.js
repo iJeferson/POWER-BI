@@ -216,12 +216,54 @@ function highlightMatch(text, query) {
   return `${escapeHtml(text.slice(0, idx))}<mark>${escapeHtml(text.slice(idx, idx + q.length))}</mark>${escapeHtml(text.slice(idx + q.length))}`;
 }
 
+function normalizeAutocompleteQuery(q) {
+  return q.trim().toLowerCase();
+}
+
+function autocompleteMatches(text, query) {
+  const q = normalizeAutocompleteQuery(query);
+  if (!q) return true;
+  const lower = text.toLowerCase();
+  if (lower.includes(q)) return true;
+  const spaced = q.replace(/\./g, ' ').replace(/_/g, ' ');
+  if (spaced !== q && lower.includes(spaced)) return true;
+  const compact = q.replace(/[._]/g, '');
+  if (compact !== q && lower.replace(/\s+/g, '').includes(compact)) return true;
+  return false;
+}
+
 function filterAutocompleteItems(items, query) {
-  const q = query.trim().toLowerCase();
-  const list = q
-    ? items.filter(v => v.toLowerCase().includes(q))
-    : items;
+  const q = query.trim();
+  const list = q ? items.filter(v => autocompleteMatches(v, q)) : items;
   return list.slice(0, 20);
+}
+
+function autocompleteParams(key) {
+  const p = new URLSearchParams();
+  const di = document.getElementById('dataInicio').value;
+  const df = document.getElementById('dataFim').value;
+  if (di) p.set('data_inicio', di);
+  if (df) p.set('data_fim', df);
+  if (key !== 'posto') {
+    const posto = document.getElementById('posto').value;
+    if (posto) p.set('posto', posto);
+  }
+  if (key !== 'operador') {
+    const operador = document.getElementById('operador').value;
+    if (operador) p.set('operador', operador);
+  }
+  const mes = selectedChips('filtroMes');
+  const regiao = selectedChips('filtroRegiao');
+  const emissora = selectedChips('filtroEmissora');
+  const tipoPosto = selectedChips('filtroTipoPosto');
+  const tipo = selectedChips('filtroTipo');
+  if (mes.length) p.set('mes', mes.join(','));
+  if (regiao.length) p.set('regiao', regiao.join(','));
+  if (emissora.length) p.set('emissora', emissora.join(','));
+  if (tipoPosto.length) p.set('tipo_posto', tipoPosto.join(','));
+  if (tipo.length) p.set('tipo_captura', tipo.join(','));
+  const s = p.toString();
+  return s ? '&' + s : '';
 }
 
 function hideAutocompleteList(key) {
@@ -244,20 +286,63 @@ function clearAutocomplete(key) {
   hideAutocompleteList(key);
 }
 
-function renderAutocompleteList(key, query) {
+function renderAutocompleteList(key, query, suggestions) {
   const list = document.getElementById(`${key}List`);
-  const suggestions = filterAutocompleteItems(AC[key].items, query);
-  AC[key].suggestions = suggestions;
-  if (!suggestions.length) {
+  const items = suggestions ?? filterAutocompleteItems(AC[key].items, query);
+  AC[key].suggestions = items;
+  if (!items.length) {
     hideAutocompleteList(key);
     return;
   }
   const q = query.trim().toLowerCase();
-  list.innerHTML = suggestions.map((v, i) =>
+  list.innerHTML = items.map((v, i) =>
     `<li class="autocomplete-item" role="option" data-idx="${i}">${highlightMatch(v, q)}</li>`
   ).join('');
   list.hidden = false;
   AC[key].active = -1;
+}
+
+const acDebounce = {};
+const acSearchGen = { posto: 0, operador: 0 };
+
+async function loadAutocompleteSuggestions(key, query) {
+  const q = query.trim();
+  if (!q) {
+    renderAutocompleteList(key, '');
+    return;
+  }
+  const gen = ++acSearchGen[key];
+  try {
+    const items = await fetchJson(
+      `/api/dashboard/filtros/buscar?tipo=${key}&q=${encodeURIComponent(q)}${autocompleteParams(key)}`
+    );
+    if (gen !== acSearchGen[key]) return;
+    renderAutocompleteList(key, q, items);
+  } catch {
+    if (gen !== acSearchGen[key]) return;
+    renderAutocompleteList(key, q);
+  }
+}
+
+async function resolveAutocompleteValue(key, typed) {
+  const t = typed.trim();
+  if (!t) return null;
+  const exact = list => list.find(v => v.toLowerCase() === t.toLowerCase());
+  let hit = exact(AC[key].suggestions) || exact(AC[key].items);
+  if (hit) return hit;
+  hit = AC[key].suggestions.find(v => autocompleteMatches(v, t));
+  if (hit) return hit;
+  try {
+    const items = await fetchJson(
+      `/api/dashboard/filtros/buscar?tipo=${key}&q=${encodeURIComponent(t)}${autocompleteParams(key)}`
+    );
+    hit = exact(items) || items.find(v => autocompleteMatches(v, t));
+    if (hit) return hit;
+    if (items.length === 1) return items[0];
+  } catch {
+    /* fallback local */
+  }
+  return null;
 }
 
 function setAutocompleteItems(key, items) {
@@ -275,11 +360,14 @@ function setupAutocomplete(key) {
   const hidden = document.getElementById(key);
 
   input.addEventListener('input', () => {
-    renderAutocompleteList(key, input.value);
+    clearTimeout(acDebounce[key]);
+    acDebounce[key] = setTimeout(() => loadAutocompleteSuggestions(key, input.value), 250);
   });
 
   input.addEventListener('focus', () => {
-    renderAutocompleteList(key, input.value);
+    const q = input.value.trim();
+    if (q) loadAutocompleteSuggestions(key, q);
+    else renderAutocompleteList(key, '');
   });
 
   input.addEventListener('keydown', (e) => {
@@ -307,7 +395,7 @@ function setupAutocomplete(key) {
   });
 
   input.addEventListener('blur', () => {
-    setTimeout(() => {
+    setTimeout(async () => {
       hideAutocompleteList(key);
       const typed = input.value.trim();
       const committed = hidden.value;
@@ -318,10 +406,10 @@ function setupAutocomplete(key) {
         }
         return;
       }
-      const exact = AC[key].items.find(v => v.toLowerCase() === typed.toLowerCase());
-      if (exact) {
-        hidden.value = exact;
-        input.value = exact;
+      const resolved = await resolveAutocompleteValue(key, typed);
+      if (resolved) {
+        hidden.value = resolved;
+        input.value = resolved;
         updateActiveChips();
       } else {
         input.value = committed;

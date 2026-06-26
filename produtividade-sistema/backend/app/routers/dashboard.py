@@ -18,6 +18,7 @@ from app.services.metrics import (
     capturas_por_tipo,
     capturas_por_tipo_posto,
     opcoes_filtros_cascata,
+    buscar_autocomplete,
     ranking_operadores,
     ranking_postos,
     resumo_dados,
@@ -390,3 +391,28 @@ def opcoes_filtros(
         ],
     }
     return base
+
+
+@router.get("/filtros/buscar")
+def buscar_filtros(
+    tipo: str = Query(..., pattern="^(operador|posto)$"),
+    q: str = Query("", min_length=1, max_length=120),
+    limit: int = Query(20, ge=1, le=50),
+    data_inicio: Optional[date] = Query(None),
+    data_fim: Optional[date] = Query(None),
+    regiao: Optional[str] = Query(None),
+    posto: Optional[str] = Query(None),
+    tipo_captura: Optional[str] = Query(None),
+    operador: Optional[str] = Query(None),
+    emissora: Optional[str] = Query(None),
+    tipo_posto: Optional[str] = Query(None),
+    mes: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    return buscar_autocomplete(
+        db,
+        tipo,
+        q,
+        limit=limit,
+        **_f(data_inicio, data_fim, regiao, posto, tipo_captura, operador, emissora, tipo_posto, mes),
+    )

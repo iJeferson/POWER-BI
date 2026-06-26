@@ -101,6 +101,66 @@ def _apply_filtros(
     return q
 
 
+def _nome_busca_clauses(column, termo: str):
+    raw = termo.strip()
+    if not raw:
+        return None
+    variantes = {
+        raw.lower(),
+        raw.replace(".", " ").lower(),
+        raw.replace(".", "").lower(),
+        raw.replace("_", " ").lower(),
+    }
+    return or_(*[func.lower(column).like(f"%{v}%") for v in variantes if v])
+
+
+def buscar_autocomplete(
+    db: Session,
+    tipo: str,
+    termo: str,
+    limit: int = 20,
+    **filtros,
+) -> list[str]:
+    termo = termo.strip()
+    if not termo or tipo not in ("operador", "posto"):
+        return []
+
+    if tipo == "operador":
+        f = {**filtros}
+        f.pop("operador", None)
+        clause = _nome_busca_clauses(Operador.nome, termo)
+        if clause is None:
+            return []
+        q = (
+            db.query(Operador.nome)
+            .select_from(Captura)
+            .join(Operador, Captura.operador_id == Operador.id)
+            .filter(clause)
+            .distinct()
+            .order_by(Operador.nome)
+            .limit(limit)
+        )
+        q = _apply_filtros(q, **f, joined_operador=True)
+        return [r[0] for r in q.all()]
+
+    f = {**filtros}
+    f.pop("posto", None)
+    clause = _nome_busca_clauses(Posto.nome, termo)
+    if clause is None:
+        return []
+    q = (
+        db.query(Posto.nome)
+        .select_from(Captura)
+        .join(Posto, Captura.posto_id == Posto.id)
+        .filter(clause)
+        .distinct()
+        .order_by(Posto.nome)
+        .limit(limit)
+    )
+    q = _apply_filtros(q, **f, joined_posto=True)
+    return [r[0] for r in q.all()]
+
+
 def _filtros_sem(chaves: list[str], **filtros) -> dict:
     f = {**filtros}
     for chave in chaves:
