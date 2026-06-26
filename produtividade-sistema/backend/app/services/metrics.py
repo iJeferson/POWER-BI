@@ -194,8 +194,19 @@ def calcular_kpis(db: Session, **filtros) -> DashboardKPIs:
     )
     tempo_medio = tempo_geral.scalar()
 
-    posto_rank = ranking_postos(db, limit=1, excluir_filtro="posto", **filtros)
-    oper_rank = ranking_operadores(db, limit=1, excluir_filtro="operador", **filtros)
+    # Com filtro de posto/operador ativo, o destaque reflete o recorte atual.
+    posto_rank = ranking_postos(
+        db,
+        limit=1,
+        excluir_filtro=None if filtros.get("posto") else "posto",
+        **filtros,
+    )
+    oper_rank = ranking_operadores(
+        db,
+        limit=1,
+        excluir_filtro=None if filtros.get("operador") else "operador",
+        **filtros,
+    )
     temporal = _metricas_temporais(db, total, **filtros)
 
     return DashboardKPIs(
