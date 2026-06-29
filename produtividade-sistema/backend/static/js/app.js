@@ -44,13 +44,9 @@ let paginaAtiva = '';
 function setDocumentTitle(tab) {
   const copy = PAGE_COPY[tab] || PAGE_COPY.captura;
   const next = copy.title;
-  if (paginaAtiva === tab && document.title === next) return;
   paginaAtiva = tab;
-  document.title = next;
-  try {
-    history.replaceState({ tab }, next, location.pathname + location.search);
-  } catch {
-    /* navegador sem suporte */
+  if (document.title !== next) {
+    document.title = next;
   }
 }
 
