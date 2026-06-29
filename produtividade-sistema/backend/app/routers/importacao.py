@@ -19,6 +19,8 @@ from app.services.import_auth import (
     criar_token_importacao,
     exigir_importacao_autorizada,
     import_protegido,
+    importacao_disponivel,
+    senha_configurada,
     validar_token_importacao,
     verificar_senha_importacao,
 )
@@ -28,7 +30,17 @@ router = APIRouter(prefix="/api/importacao", tags=["importacao"])
 
 @router.get("/config", response_model=ImportConfigResponse)
 def config_importacao():
-    return ImportConfigResponse(requer_senha=import_protegido())
+    bloqueada = not importacao_disponivel()
+    return ImportConfigResponse(
+        requer_senha=import_protegido() and senha_configurada(),
+        disponivel=not bloqueada,
+        motivo_bloqueio=(
+            "IMPORT_PASSWORD não está configurada no servidor. "
+            "Defina a variável de ambiente no Railway."
+        )
+        if bloqueada
+        else None,
+    )
 
 
 @router.get("/sessao", response_model=ImportSessaoResponse)
@@ -41,7 +53,9 @@ def sessao_importacao(x_import_token: str | None = Header(None, alias="X-Import-
 
 @router.post("/auth", response_model=ImportAuthResponse)
 def autenticar_importacao(body: ImportAuthRequest):
-    if not import_protegido():
+    if not importacao_disponivel():
+        raise HTTPException(503, "IMPORT_PASSWORD não configurada no servidor")
+    if not import_protegido() or not senha_configurada():
         return ImportAuthResponse(token="", expira_em_segundos=TOKEN_MAX_AGE)
     if not verificar_senha_importacao(body.senha):
         raise HTTPException(401, "Senha incorreta")

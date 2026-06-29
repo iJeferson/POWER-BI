@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/app.css?v=20" />
+  <link rel="stylesheet" href="/static/css/app.css?v=21" />
 <style>
 @keyframes loader-spin-slow { to { transform: rotate(360deg); } }
 #loading .loader-lucide {
@@ -174,8 +174,11 @@ Filtros
 </button>
 </div>
 <div class="admin-modal-body">
-<div id="adminAuthStep">
-<p class="admin-modal-desc">Digite a senha de acesso para importar dados no sistema.</p>
+<div id="adminBlockedStep" hidden>
+<p class="admin-modal-desc admin-blocked-msg" id="adminBlockedMsg">Importação indisponível no momento.</p>
+</div>
+<div id="adminAuthStep" hidden>
+<p class="admin-modal-desc">Digite a senha de acesso para importar planilhas.</p>
 <label class="admin-field" for="importSenha">
 <span>Senha</span>
 <input type="password" id="importSenha" autocomplete="current-password" placeholder="Senha de importação" />
@@ -183,7 +186,7 @@ Filtros
 <p class="admin-auth-error" id="importAuthError" hidden></p>
 <button type="button" class="btn btn-primary admin-auth-submit" id="btnImportAuth">
 <i data-lucide="lock-keyhole" class="icon icon-sm" aria-hidden="true"></i>
-Entrar
+Acessar importação
 </button>
 </div>
 <div id="adminImportStep" hidden>
@@ -200,10 +203,6 @@ Importar dados
 </button>
 <p class="file-selected-hint" id="arquivoSelecionadoInfo">Nenhuma planilha selecionada</p>
 </div>
-<button type="button" class="btn btn-ghost admin-logout" id="btnImportLogout">
-<i data-lucide="log-out" class="icon icon-sm" aria-hidden="true"></i>
-Encerrar sessão
-</button>
 </div>
 </div>
 </div>
@@ -216,6 +215,6 @@ Encerrar sessão
 <div class="loading-progress-bar" id="loadingBar"></div>
 </div>
 </div>
-<script src="/static/js/app.js?v=20"></script>
+<script src="/static/js/app.js?v=21"></script>
 </body>
 </html>

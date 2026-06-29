@@ -430,9 +430,9 @@ align-items: stretch;
 }
 .import-group-modal .btn { width: 100%; }
 .import-group-modal .file-selected-hint { text-align: center; }
-.admin-logout {
-width: 100%;
-margin-top: 0.85rem;
+.admin-blocked-msg {
+color: #c0392b;
+font-weight: 600;
 }
 /* ── Layout ── */
 .app-body {

@@ -45,6 +45,8 @@ class ImportAuthResponse(BaseModel):
 
 class ImportConfigResponse(BaseModel):
     requer_senha: bool
+    disponivel: bool = True
+    motivo_bloqueio: Optional[str] = None
 
 
 class ImportSessaoResponse(BaseModel):
