@@ -3,7 +3,7 @@ import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -52,6 +52,20 @@ app.include_router(dashboard.router)
 app.include_router(importacao.router)
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
+
+
+@app.get("/static/js/app.js", include_in_schema=False)
+def app_js():
+    path = static_dir / "js" / "app.js"
+    if not path.exists():
+        raise HTTPException(404)
+    return FileResponse(
+        path,
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+    )
+
+
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 

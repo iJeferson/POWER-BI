@@ -39,14 +39,11 @@ const PAGE_COPY = {
   },
 };
 
-let paginaAtiva = '';
+const DOCUMENT_TITLE = 'Consórcio Bahia Digital';
 
-function setDocumentTitle(tab) {
-  const copy = PAGE_COPY[tab] || PAGE_COPY.captura;
-  const next = copy.title;
-  paginaAtiva = tab;
-  if (document.title !== next) {
-    document.title = next;
+function syncDocumentTitle() {
+  if (document.title !== DOCUMENT_TITLE) {
+    document.title = DOCUMENT_TITLE;
   }
 }
 
@@ -72,7 +69,7 @@ function atualizarPagina(tab = 'captura') {
   const copy = PAGE_COPY[tab] || PAGE_COPY.captura;
   document.getElementById('pageTitle').textContent = copy.title;
   document.getElementById('pageSubtitle').textContent = copy.subtitle;
-  setDocumentTitle(tab);
+  syncDocumentTitle();
 }
 
 function atualizarBrandEyebrow(resumo) {
@@ -1084,6 +1081,7 @@ window.addEventListener('resize', () => {
 
 initAutocompletes();
 refreshIcons();
+syncDocumentTitle();
 carregarImportConfig();
 atualizarPagina('captura');
 carregarDashboard();
