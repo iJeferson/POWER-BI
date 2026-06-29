@@ -28,18 +28,22 @@ function fmtPct(n) { return n == null ? '—' : n.toLocaleString('pt-BR', { mini
 function fmtTempo(m) { return m == null ? '—' : m.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' min'; }
 function isDesktop() { return window.innerWidth >= DESKTOP_BP; }
 
+const SITE_NAME = 'Consórcio Bahia Digital';
+
 const PAGE_COPY = {
   captura: {
     title: 'Painel de Captura',
     subtitle: 'Capturas por emissora, posto e tipo de documento.',
-    docTitle: 'Painel de Captura',
   },
   produtividade: {
     title: 'Produtividade Operacional',
     subtitle: 'Desempenho por posto e atendente.',
-    docTitle: 'Produtividade Operacional',
   },
 };
+
+function setDocumentTitle(pageTitle) {
+  document.title = `${pageTitle} · ${SITE_NAME}`;
+}
 
 function formatBrandEyebrow(resumo) {
   const anoAtual = new Date().getFullYear();
@@ -63,7 +67,7 @@ function atualizarPagina(tab = 'captura') {
   const copy = PAGE_COPY[tab] || PAGE_COPY.captura;
   document.getElementById('pageTitle').textContent = copy.title;
   document.getElementById('pageSubtitle').textContent = copy.subtitle;
-  document.title = `Consórcio Bahia Digital — ${copy.docTitle}`;
+  setDocumentTitle(copy.title);
 }
 
 function atualizarBrandEyebrow(resumo) {
