@@ -84,5 +84,12 @@ def favicon():
 def root():
     index = static_dir / "index.html"
     if index.exists():
-        return FileResponse(index, media_type="text/html; charset=utf-8")
+        return FileResponse(
+            index,
+            media_type="text/html; charset=utf-8",
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate",
+                "Pragma": "no-cache",
+            },
+        )
     return {"message": "API Produtividade Consórcio. Acesse /docs para documentação."}

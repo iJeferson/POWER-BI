@@ -28,8 +28,6 @@ function fmtPct(n) { return n == null ? '—' : n.toLocaleString('pt-BR', { mini
 function fmtTempo(m) { return m == null ? '—' : m.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' min'; }
 function isDesktop() { return window.innerWidth >= DESKTOP_BP; }
 
-const SITE_NAME = 'Consórcio Bahia Digital';
-
 const PAGE_COPY = {
   captura: {
     title: 'Painel de Captura',
@@ -41,8 +39,19 @@ const PAGE_COPY = {
   },
 };
 
-function setDocumentTitle(pageTitle) {
-  document.title = `${pageTitle} · ${SITE_NAME}`;
+let paginaAtiva = '';
+
+function setDocumentTitle(tab) {
+  const copy = PAGE_COPY[tab] || PAGE_COPY.captura;
+  const next = copy.title;
+  if (paginaAtiva === tab && document.title === next) return;
+  paginaAtiva = tab;
+  document.title = next;
+  try {
+    history.replaceState({ tab }, next, location.pathname + location.search);
+  } catch {
+    /* navegador sem suporte */
+  }
 }
 
 function formatBrandEyebrow(resumo) {
@@ -67,7 +76,7 @@ function atualizarPagina(tab = 'captura') {
   const copy = PAGE_COPY[tab] || PAGE_COPY.captura;
   document.getElementById('pageTitle').textContent = copy.title;
   document.getElementById('pageSubtitle').textContent = copy.subtitle;
-  setDocumentTitle(copy.title);
+  setDocumentTitle(tab);
 }
 
 function atualizarBrandEyebrow(resumo) {
@@ -851,6 +860,8 @@ function limparFiltros() {
 }
 
 document.querySelectorAll('.tab').forEach(btn => {
+  if (btn.dataset.tabBound === '1') return;
+  btn.dataset.tabBound = '1';
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
