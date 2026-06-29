@@ -877,6 +877,147 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+const IMPORT_TOKEN_KEY = 'importAuthToken';
+let importConfig = { requer_senha: false };
+let importAutenticado = false;
+
+function getImportToken() {
+  return sessionStorage.getItem(IMPORT_TOKEN_KEY) || '';
+}
+
+function setImportToken(token) {
+  if (token) sessionStorage.setItem(IMPORT_TOKEN_KEY, token);
+  else sessionStorage.removeItem(IMPORT_TOKEN_KEY);
+}
+
+function importFetchHeaders(extra = {}) {
+  const headers = { ...extra };
+  const token = getImportToken();
+  if (token) headers['X-Import-Token'] = token;
+  return headers;
+}
+
+async function carregarImportConfig() {
+  try {
+    importConfig = await fetchJson('/api/importacao/config');
+  } catch {
+    importConfig = { requer_senha: true };
+  }
+}
+
+async function verificarSessaoImport() {
+  const token = getImportToken();
+  if (!importConfig.requer_senha) {
+    importAutenticado = true;
+    return true;
+  }
+  if (!token) {
+    importAutenticado = false;
+    return false;
+  }
+  try {
+    const res = await fetch(API + '/api/importacao/sessao', { headers: importFetchHeaders() });
+    const data = await res.json();
+    importAutenticado = !!data.autenticado;
+    if (!importAutenticado) setImportToken('');
+    return importAutenticado;
+  } catch {
+    importAutenticado = false;
+    setImportToken('');
+    return false;
+  }
+}
+
+function showAdminStep(step) {
+  const auth = document.getElementById('adminAuthStep');
+  const imp = document.getElementById('adminImportStep');
+  const err = document.getElementById('importAuthError');
+  if (step === 'import') {
+    auth.hidden = true;
+    imp.hidden = false;
+    err.hidden = true;
+  } else {
+    auth.hidden = false;
+    imp.hidden = true;
+    document.getElementById('importSenha').value = '';
+    err.hidden = true;
+  }
+}
+
+function openAdminModal() {
+  document.getElementById('adminBackdrop').hidden = false;
+  document.getElementById('adminModal').hidden = false;
+  requestAnimationFrame(() => {
+    document.getElementById('adminBackdrop').classList.add('show');
+    document.getElementById('adminModal').classList.add('show');
+  });
+  if (importAutenticado) showAdminStep('import');
+  else showAdminStep('auth');
+  refreshIcons();
+  if (!importAutenticado) document.getElementById('importSenha').focus();
+}
+
+function closeAdminModal() {
+  document.getElementById('adminBackdrop').classList.remove('show');
+  document.getElementById('adminModal').classList.remove('show');
+  setTimeout(() => {
+    document.getElementById('adminBackdrop').hidden = true;
+    document.getElementById('adminModal').hidden = true;
+  }, 200);
+}
+
+async function abrirPainelImportacao() {
+  await carregarImportConfig();
+  if (!importConfig.requer_senha) {
+    importAutenticado = true;
+    openAdminModal();
+    return;
+  }
+  const ok = await verificarSessaoImport();
+  if (ok) openAdminModal();
+  else openAdminModal();
+}
+
+async function autenticarImportacao() {
+  const senha = document.getElementById('importSenha').value;
+  const err = document.getElementById('importAuthError');
+  err.hidden = true;
+  if (!senha.trim()) {
+    err.textContent = 'Informe a senha de acesso.';
+    err.hidden = false;
+    return;
+  }
+  try {
+    const res = await fetch(API + '/api/importacao/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Senha incorreta');
+    if (data.token) setImportToken(data.token);
+    importAutenticado = true;
+    showAdminStep('import');
+    toast('Acesso liberado para importação');
+  } catch (e) {
+    err.textContent = e.message;
+    err.hidden = false;
+  }
+}
+
+function encerrarSessaoImportacao() {
+  setImportToken('');
+  importAutenticado = false;
+  document.getElementById('arquivoExcel').value = '';
+  atualizarArquivoSelecionado();
+  if (importConfig.requer_senha) {
+    showAdminStep('auth');
+    toast('Sessão de importação encerrada');
+  } else {
+    closeAdminModal();
+  }
+}
+
 function atualizarArquivoSelecionado() {
   const input = document.getElementById('arquivoExcel');
   const info = document.getElementById('arquivoSelecionadoInfo');
@@ -901,20 +1042,45 @@ function atualizarArquivoSelecionado() {
 
 document.getElementById('arquivoExcel').addEventListener('change', atualizarArquivoSelecionado);
 
+document.getElementById('btnAdminGear').addEventListener('click', abrirPainelImportacao);
+document.getElementById('btnCloseAdmin').addEventListener('click', closeAdminModal);
+document.getElementById('adminBackdrop').addEventListener('click', closeAdminModal);
+document.getElementById('btnImportAuth').addEventListener('click', autenticarImportacao);
+document.getElementById('importSenha').addEventListener('keydown', e => {
+  if (e.key === 'Enter') autenticarImportacao();
+});
+document.getElementById('btnImportLogout').addEventListener('click', encerrarSessaoImportacao);
+
 document.getElementById('btnImportar').addEventListener('click', async () => {
   const input = document.getElementById('arquivoExcel');
   if (!input.files.length) { toast('Selecione uma planilha Excel para importar'); return; }
+  if (importConfig.requer_senha && !importAutenticado) {
+    toast('Informe a senha de acesso para importar');
+    showAdminStep('auth');
+    return;
+  }
   const fd = new FormData();
   fd.append('arquivo', input.files[0]);
   setLoading(true, 'Importando planilha', 'import');
   try {
-    const res = await fetch(API + '/api/importacao/arquivo', { method: 'POST', body: fd });
+    const res = await fetch(API + '/api/importacao/arquivo', {
+      method: 'POST',
+      headers: importFetchHeaders(),
+      body: fd,
+    });
     const data = await res.json();
+    if (res.status === 401) {
+      importAutenticado = false;
+      setImportToken('');
+      showAdminStep('auth');
+      throw new Error('Sessão expirada. Informe a senha novamente.');
+    }
     if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Falha na importação');
     toast(data.mensagem);
     await carregarDashboard();
     input.value = '';
     atualizarArquivoSelecionado();
+    closeAdminModal();
   } catch (e) {
     toast('Erro: ' + e.message);
   } finally {
@@ -940,5 +1106,6 @@ window.addEventListener('resize', () => {
 
 initAutocompletes();
 refreshIcons();
+carregarImportConfig();
 atualizarPagina('captura');
 carregarDashboard();

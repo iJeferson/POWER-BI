@@ -1,21 +1,58 @@
 import shutil
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.schemas import ImportacaoResultado
+from app.schemas import (
+    ImportAuthRequest,
+    ImportAuthResponse,
+    ImportConfigResponse,
+    ImportacaoResultado,
+    ImportSessaoResponse,
+)
 from app.services.excel_importer import importar_arquivo_excel, importar_pasta
+from app.services.import_auth import (
+    TOKEN_MAX_AGE,
+    criar_token_importacao,
+    exigir_importacao_autorizada,
+    import_protegido,
+    validar_token_importacao,
+    verificar_senha_importacao,
+)
 
 router = APIRouter(prefix="/api/importacao", tags=["importacao"])
+
+
+@router.get("/config", response_model=ImportConfigResponse)
+def config_importacao():
+    return ImportConfigResponse(requer_senha=import_protegido())
+
+
+@router.get("/sessao", response_model=ImportSessaoResponse)
+def sessao_importacao(x_import_token: str | None = Header(None, alias="X-Import-Token")):
+    return ImportSessaoResponse(
+        autenticado=validar_token_importacao(x_import_token),
+        requer_senha=import_protegido(),
+    )
+
+
+@router.post("/auth", response_model=ImportAuthResponse)
+def autenticar_importacao(body: ImportAuthRequest):
+    if not import_protegido():
+        return ImportAuthResponse(token="", expira_em_segundos=TOKEN_MAX_AGE)
+    if not verificar_senha_importacao(body.senha):
+        raise HTTPException(401, "Senha incorreta")
+    return ImportAuthResponse(token=criar_token_importacao(), expira_em_segundos=TOKEN_MAX_AGE)
 
 
 @router.post("/arquivo", response_model=ImportacaoResultado)
 async def importar_arquivo(
     arquivo: UploadFile = File(...),
     db: Session = Depends(get_db),
+    _: None = Depends(exigir_importacao_autorizada),
 ):
     if not arquivo.filename or not arquivo.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(400, "Envie um arquivo Excel (.xlsx ou .xls)")
@@ -36,7 +73,10 @@ async def importar_arquivo(
 
 
 @router.post("/pasta", response_model=list[ImportacaoResultado])
-def importar_da_pasta_local(db: Session = Depends(get_db)):
+def importar_da_pasta_local(
+    db: Session = Depends(get_db),
+    _: None = Depends(exigir_importacao_autorizada),
+):
     """Importa todos os Excel da pasta /app/uploads (útil em produção com volume montado)."""
     pasta = Path(settings.upload_dir)
     if not pasta.exists():

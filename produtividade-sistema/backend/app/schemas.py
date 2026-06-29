@@ -34,6 +34,24 @@ class ImportacaoResultado(BaseModel):
     mensagem: str
 
 
+class ImportAuthRequest(BaseModel):
+    senha: str = Field(..., min_length=1)
+
+
+class ImportAuthResponse(BaseModel):
+    token: str
+    expira_em_segundos: int = 8 * 3600
+
+
+class ImportConfigResponse(BaseModel):
+    requer_senha: bool
+
+
+class ImportSessaoResponse(BaseModel):
+    autenticado: bool
+    requer_senha: bool
+
+
 class DashboardKPIs(BaseModel):
     total_atendimentos: int
     total_cin: int

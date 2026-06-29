@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     upload_dir: str = str(_ROOT / "data" / "uploads")
     cors_origins: str = "*"
     port: int = 8000
+    import_password: str = ""
 
     model_config = {"env_file": str(_ROOT / ".env"), "extra": "ignore"}
 

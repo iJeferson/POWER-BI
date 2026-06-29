@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/app.css?v=18" />
+  <link rel="stylesheet" href="/static/css/app.css?v=20" />
 <style>
 @keyframes loader-spin-slow { to { transform: rotate(360deg); } }
 #loading .loader-lucide {
@@ -45,18 +45,9 @@ flex-shrink: 0;
 </div>
 </div>
 <div class="header-actions">
-<div class="import-group">
-<label class="btn btn-ghost file-input-wrap" id="btnSelecionarArquivo">
-<i data-lucide="file-spreadsheet" class="icon icon-sm" aria-hidden="true"></i>
-<span id="btnSelecionarTexto">Selecionar planilha</span>
-<input type="file" id="arquivoExcel" accept=".xlsx,.xls" />
-</label>
-<button type="button" class="btn btn-primary" id="btnImportar" disabled>
-<i data-lucide="upload" class="icon icon-sm" aria-hidden="true"></i>
-Importar dados
+<button type="button" class="btn-icon" id="btnAdminGear" aria-label="Importação de planilha" title="Importação de planilha">
+<i data-lucide="settings" class="icon icon-sm" aria-hidden="true"></i>
 </button>
-<p class="file-selected-hint" id="arquivoSelecionadoInfo">Nenhuma planilha selecionada</p>
-</div>
 </div>
 </div>
 </header>
@@ -174,6 +165,48 @@ Filtros
 </footer>
 </main>
 </div>
+<div class="admin-backdrop" id="adminBackdrop" hidden></div>
+<div class="admin-modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle" hidden>
+<div class="admin-modal-head">
+<h2 id="adminModalTitle">Importação de planilha</h2>
+<button type="button" class="btn-icon" id="btnCloseAdmin" aria-label="Fechar">
+<i data-lucide="x" class="icon icon-sm" aria-hidden="true"></i>
+</button>
+</div>
+<div class="admin-modal-body">
+<div id="adminAuthStep">
+<p class="admin-modal-desc">Digite a senha de acesso para importar dados no sistema.</p>
+<label class="admin-field" for="importSenha">
+<span>Senha</span>
+<input type="password" id="importSenha" autocomplete="current-password" placeholder="Senha de importação" />
+</label>
+<p class="admin-auth-error" id="importAuthError" hidden></p>
+<button type="button" class="btn btn-primary admin-auth-submit" id="btnImportAuth">
+<i data-lucide="lock-keyhole" class="icon icon-sm" aria-hidden="true"></i>
+Entrar
+</button>
+</div>
+<div id="adminImportStep" hidden>
+<p class="admin-modal-desc">Selecione a planilha mensal (.xlsx) e importe os registros para o banco.</p>
+<div class="import-group import-group-modal">
+<label class="btn btn-ghost file-input-wrap" id="btnSelecionarArquivo">
+<i data-lucide="file-spreadsheet" class="icon icon-sm" aria-hidden="true"></i>
+<span id="btnSelecionarTexto">Selecionar planilha</span>
+<input type="file" id="arquivoExcel" accept=".xlsx,.xls" />
+</label>
+<button type="button" class="btn btn-primary" id="btnImportar" disabled>
+<i data-lucide="upload" class="icon icon-sm" aria-hidden="true"></i>
+Importar dados
+</button>
+<p class="file-selected-hint" id="arquivoSelecionadoInfo">Nenhuma planilha selecionada</p>
+</div>
+<button type="button" class="btn btn-ghost admin-logout" id="btnImportLogout">
+<i data-lucide="log-out" class="icon icon-sm" aria-hidden="true"></i>
+Encerrar sessão
+</button>
+</div>
+</div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 <div class="loading-overlay" id="loading" aria-live="polite" aria-busy="true">
 <div class="loader-lucide" aria-hidden="true"></div>
@@ -183,6 +216,6 @@ Filtros
 <div class="loading-progress-bar" id="loadingBar"></div>
 </div>
 </div>
-<script src="/static/js/app.js?v=19"></script>
+<script src="/static/js/app.js?v=20"></script>
 </body>
 </html>
