@@ -917,18 +917,22 @@ function openAdminModal(focusSenha = false) {
   if (focusSenha) document.getElementById('importSenha').focus();
 }
 
-function closeAdminModal() {
+function hideAdminModal() {
   document.getElementById('adminBackdrop').classList.remove('show');
   document.getElementById('adminModal').classList.remove('show');
+  setTimeout(() => {
+    document.getElementById('adminBackdrop').hidden = true;
+    document.getElementById('adminModal').hidden = true;
+  }, 200);
+}
+
+function closeAdminModal() {
+  hideAdminModal();
   importToken = '';
   importAutenticado = false;
   document.getElementById('importSenha').value = '';
   document.getElementById('arquivoExcel').value = '';
   atualizarArquivoSelecionado();
-  setTimeout(() => {
-    document.getElementById('adminBackdrop').hidden = true;
-    document.getElementById('adminModal').hidden = true;
-  }, 200);
 }
 
 async function abrirPainelImportacao() {
@@ -1023,11 +1027,13 @@ document.getElementById('btnImportar').addEventListener('click', async () => {
   }
   const fd = new FormData();
   fd.append('arquivo', input.files[0]);
+  const headers = importFetchHeaders();
+  hideAdminModal();
   setLoading(true, 'Importando planilha', 'import');
   try {
     const res = await fetch(API + '/api/importacao/arquivo', {
       method: 'POST',
-      headers: importFetchHeaders(),
+      headers,
       body: fd,
     });
     const data = await res.json();
@@ -1035,13 +1041,12 @@ document.getElementById('btnImportar').addEventListener('click', async () => {
       importAutenticado = false;
       importToken = '';
       showAdminStep('auth');
+      openAdminModal(true);
       throw new Error('Senha necessária novamente.');
     }
     if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Falha na importação');
     toast(data.mensagem);
     await carregarDashboard();
-    input.value = '';
-    atualizarArquivoSelecionado();
     closeAdminModal();
   } catch (e) {
     toast('Erro: ' + e.message);
